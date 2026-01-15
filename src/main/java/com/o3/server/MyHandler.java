@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public class MyHandler implements HttpHandler {
+	String [] database = {"Message 1", "Message 2", "Message 3"};
+
 	@Override
 	public void handle(HttpExchange t) throws IOException {
 
