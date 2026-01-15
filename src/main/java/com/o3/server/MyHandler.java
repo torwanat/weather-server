@@ -36,18 +36,32 @@ public class MyHandler implements HttpHandler {
 			.append("<body>")
 			.append("<div>");
 
-		for (String message : database){
+		if (database.length > 0){
+			for (String message : database){
+				responseHTMLBuilder.append("<div style=\"" +
+						"border: 1px solid black; " +
+						"margin: 5px; " +
+						"padding: 0 40px; " +
+						"border-radius: 30px; " +
+						"width: fit-content\">")
+					.append("<h4>")
+					.append(message)
+					.append("</h4>")
+					.append("</div>");
+			}
+		} else {
 			responseHTMLBuilder.append("<div style=\"" +
-					"border: 1px solid black; " +
-					"margin: 5px; " +
-					"padding: 0 40px; " +
-					"border-radius: 30px; " +
-					"width: fit-content\">")
+				"border: 1px solid black; " +
+				"margin: 5px; " +
+				"padding: 0 40px; " +
+				"border-radius: 30px; " +
+				"width: fit-content\">")
 				.append("<h4>")
-				.append(message)
+				.append("No messages")
 				.append("</h4>")
 				.append("</div>");
 		}
+
 
 		responseHTMLBuilder.append("</div>")
 			.append("</body>")
