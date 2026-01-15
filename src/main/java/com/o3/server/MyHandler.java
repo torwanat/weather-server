@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public class MyHandler implements HttpHandler {
-	String [] database = {"Message 1", "Message 2", "Message 3"};
+	String [] database = {"Message 1", "Message 2", "Message 3", "ąęćżźł"};
 
 	@Override
 	public void handle(HttpExchange t) throws IOException {
@@ -24,21 +24,36 @@ public class MyHandler implements HttpHandler {
 		} else {
 			handleRubbishResponse(t);
 		}
-
-//			String response = t.getRequestMethod();
-//			t.sendResponseHeaders(200, response.length());
-//			OutputStream os = t.getResponseBody();
-//			os.write(response.getBytes());
-//			os.close();
 	}
 
 	private String handleGETRequest(HttpExchange t){
-		String query = Objects.toString(t.getRequestURI().getQuery(), "");
-		String param = "No params :c";
-		try {
-			param = query.split("=")[1];
-		} catch (Exception ignored) {}
-		return param;
+
+		StringBuilder responseHTMLBuilder = new StringBuilder();
+		responseHTMLBuilder.append("<html>")
+			.append("<head>")
+			.append("<meta charset=\"UTF-8\"")
+			.append("</head>")
+			.append("<body>")
+			.append("<div>");
+
+		for (String message : database){
+			responseHTMLBuilder.append("<div style=\"" +
+					"border: 1px solid black; " +
+					"margin: 5px; " +
+					"padding: 0 40px; " +
+					"border-radius: 30px; " +
+					"width: fit-content\">")
+				.append("<h4>")
+				.append(message)
+				.append("</h4>")
+				.append("</div>");
+		}
+
+		responseHTMLBuilder.append("</div>")
+			.append("</body>")
+			.append("</html>");
+
+		return responseHTMLBuilder.toString();
 	}
 
 	private void handlePOSTRequest(HttpExchange t){
