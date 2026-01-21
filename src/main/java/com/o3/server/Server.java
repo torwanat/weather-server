@@ -6,6 +6,7 @@ import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
 
+import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
@@ -31,7 +32,10 @@ public class Server {
 				}
 			});
 
-			server.createContext("/datarecord", new MyHandler());
+			final HttpContext serverContext = server.createContext("/datarecord", new MyHandler());
+			UserAuthenticator authenticator = new UserAuthenticator();
+			serverContext.setAuthenticator(authenticator);
+
 			server.setExecutor(null);
 			server.start();
 		} catch (IllegalStateException e) {
