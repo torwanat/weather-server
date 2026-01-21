@@ -61,9 +61,9 @@ public class Server {
 	}
 
 	private static SSLContext myServerSSLContext() throws Exception {
-		char[] passphrase = "hasl0t0mig0tkA".toCharArray();
+		char[] passphrase = args[1].toCharArray();
 		KeyStore ks = KeyStore.getInstance("JKS");
-		ks.load(new FileInputStream("keystore.jks"), passphrase);
+		ks.load(new FileInputStream(args[0]), passphrase);
 
 		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
 		kmf.init(ks, passphrase);
