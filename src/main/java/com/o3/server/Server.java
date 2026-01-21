@@ -17,7 +17,7 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 public class Server {
-	private static String[] args;
+	private static String[] args = {"keystore.jks", "passwd"};
 
 	public static void main(String[] args) throws Exception {
 		try {
