@@ -36,6 +36,8 @@ public class Server {
 			UserAuthenticator authenticator = new UserAuthenticator();
 			serverContext.setAuthenticator(authenticator);
 
+			server.createContext("/registration", new RegistrationHandler(authenticator));
+
 			server.setExecutor(null);
 			server.start();
 		} catch (IllegalStateException e) {
