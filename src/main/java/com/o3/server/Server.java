@@ -17,6 +17,7 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 public class Server {
+	private static String[] args;
 
 	public static void main(String[] args) throws Exception {
 		try {
