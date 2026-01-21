@@ -17,12 +17,11 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 public class Server {
-	private static String[] args = {"keystore.jks", "passwd"};
 
 	public static void main(String[] args) throws Exception {
 		try {
 			HttpsServer server = HttpsServer.create(new InetSocketAddress(8001), 0);
-			SSLContext sslContext = myServerSSLContext();
+			SSLContext sslContext = myServerSSLContext(args);
 
 			server.setHttpsConfigurator(new HttpsConfigurator(sslContext) {
 				public void configure(HttpsParameters params) {
@@ -61,7 +60,7 @@ public class Server {
 		}
 	}
 
-	private static SSLContext myServerSSLContext() throws Exception {
+	private static SSLContext myServerSSLContext(String[] args) throws Exception {
 		char[] passphrase = args[1].toCharArray();
 		KeyStore ks = KeyStore.getInstance("JKS");
 		ks.load(new FileInputStream(args[0]), passphrase);
