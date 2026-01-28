@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-public class MyHandler implements HttpHandler {
+public class ServerHandler implements HttpHandler {
 	ArrayList<String> database = new ArrayList<String>();
 
 	@Override
