@@ -18,7 +18,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 public class Server {
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		try {
 			HttpsServer server = HttpsServer.create(new InetSocketAddress(8001), 0);
 			SSLContext sslContext = myServerSSLContext(args);
