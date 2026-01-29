@@ -2,30 +2,30 @@ package com.o3.server;
 
 import com.sun.net.httpserver.BasicAuthenticator;
 
-import java.util.Hashtable;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Optional;
 
 public class UserAuthenticator extends BasicAuthenticator {
-	private Map<String, String> users = null;
+	private final ArrayList<User> userArrayList;
 
 	public UserAuthenticator () {
 		super("datarecord");
 
-		users = new Hashtable<String, String>();
-		users.put("dummy", "passwd");
+		this.userArrayList = new ArrayList<>();
 	}
 
 	@Override
 	public boolean checkCredentials(String username, String password) {
-		return users.containsKey(username) && users.get(username).equals(password);
+		return userArrayList.contains(new User(username, password));
 	}
 
-	public boolean addUser(String username, String password){
-		if(users.containsKey(username)){
+	public boolean addUser(String username, String password, String email){
+		Optional<User> duplicateUser = userArrayList.stream().findFirst().filter(u -> u.getUsername().equals(username));
+		if(duplicateUser.isPresent()){
 			return false;
 		}
 
-		users.put(username, password);
+		userArrayList.add(new User(username, password, email));
 		return true;
 	}
 }

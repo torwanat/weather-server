@@ -2,6 +2,8 @@ package com.o3.server;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,41 +24,60 @@ public class RegistrationHandler implements HttpHandler {
 		String requestMethod = exchange.getRequestMethod();
 
 		if("POST".equals(requestMethod)){
-			boolean success = handlePOSTRequest(exchange);
-			handlePOSTResponse(exchange, success);
+			String result = handlePOSTRequest(exchange);
+			handleResponse(exchange, result, result.equals("User added successfully") ? 200 : 403);
 		} else {
-			handleNotSupportedRequest(exchange);
+			handleResponse(exchange, "Not supported", 400);
 		}
 	}
 
-	private boolean handlePOSTRequest(HttpExchange t){
+	private String handlePOSTRequest(HttpExchange t){
 		try {
 			String payload = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-			String[] separate = payload.split(":");
-			String username = separate[0];
-			String password = separate[1];
-			if (username != null && password != null){
-				return authenticator.addUser(username, password);
-			} else return false;
+			try {
+				JSONObject requestBody = new JSONObject(payload);
+				String username = requestBody.getString("username");
+				String password = requestBody.getString("password");
+				String email = requestBody.getString("email");
+				if (username != null && password != null && email != null && !username.isEmpty() && !password.isEmpty() && !email.isEmpty()){
+					if (authenticator.addUser(username, password, email)) {
+						return "User added successfully";
+					} else {
+						return "User already exists";
+					}
+				}
+				return "Empty fields not allowed";
+			} catch (JSONException e) {
+				return "Bad JSON input";
+			}
 		} catch (Exception e) {
-			return false;
+			return "Error while adding user";
 		}
 	}
 
-	private void handlePOSTResponse(HttpExchange t, boolean success) throws IOException {
-		String responseString = success? "User added successfully" : "Error while adding user";
-		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
-		t.sendResponseHeaders(success? 200 : 403, bytes.length);
-		OutputStream os = t.getResponseBody();
-		os.write(responseString.getBytes());
-		os.flush();
-		os.close();
-	}
+//	private void handlePOSTResponse(HttpExchange t, boolean success) throws IOException {
+//		String responseString = success? "User added successfully" : "Error while adding user";
+//		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
+//		t.sendResponseHeaders(success? 200 : 403, bytes.length);
+//		OutputStream os = t.getResponseBody();
+//		os.write(responseString.getBytes());
+//		os.flush();
+//		os.close();
+//	}
+//
+//	private void handleNotSupportedRequest(HttpExchange t) throws IOException {
+//		String responseString = "Not supported";
+//		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
+//		t.sendResponseHeaders(400, bytes.length);
+//		OutputStream os = t.getResponseBody();
+//		os.write(responseString.getBytes());
+//		os.flush();
+//		os.close();
+//	}
 
-	private void handleNotSupportedRequest(HttpExchange t) throws IOException {
-		String responseString = "Not supported";
+	private void handleResponse(HttpExchange t, String responseString, int code) throws IOException {
 		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
-		t.sendResponseHeaders(400, bytes.length);
+		t.sendResponseHeaders(code, bytes.length);
 		OutputStream os = t.getResponseBody();
 		os.write(responseString.getBytes());
 		os.flush();
