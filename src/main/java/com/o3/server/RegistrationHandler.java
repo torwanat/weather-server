@@ -24,14 +24,13 @@ public class RegistrationHandler implements HttpHandler {
 		String requestMethod = exchange.getRequestMethod();
 
 		if("POST".equals(requestMethod)){
-			String result = handlePOSTRequest(exchange);
-			handleResponse(exchange, result, result.equals("User added successfully") ? 200 : 403);
+			handlePOSTRequest(exchange);
 		} else {
 			handleResponse(exchange, "Not supported", 400);
 		}
 	}
 
-	private String handlePOSTRequest(HttpExchange t){
+	private void handlePOSTRequest(HttpExchange t){
 		try {
 			String payload = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
 			try {
@@ -41,17 +40,20 @@ public class RegistrationHandler implements HttpHandler {
 				String email = requestBody.getString("email");
 				if (username != null && password != null && email != null && !username.isEmpty() && !password.isEmpty() && !email.isEmpty()){
 					if (authenticator.addUser(username, password, email)) {
-						return "User added successfully";
+						handleResponse(t, "User added successfully", 200);
+						return;
 					} else {
-						return "User already exists";
+						handleResponse(t, "User already exists", 403);
+						return;
 					}
 				}
-				return "Empty fields not allowed";
+				handleResponse(t, "Empty fields not allowed", 400);
 			} catch (JSONException e) {
-				return "Bad JSON input";
+				handleResponse(t, "Bad JSON input", 400);
+
 			}
 		} catch (Exception e) {
-			return "Error while adding user";
+			e.printStackTrace();
 		}
 	}
 

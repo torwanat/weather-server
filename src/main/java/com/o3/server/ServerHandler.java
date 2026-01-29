@@ -6,11 +6,9 @@ import com.o3.server.observations.StateVector;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -21,11 +19,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ServerHandler implements HttpHandler {
-	ArrayList<String> database = new ArrayList<>();
 	ArrayList<ObservationRecord> observations = new ArrayList<>();
 
 	@Override
-	public void handle(HttpExchange t) throws IOException {
+	public void handle(HttpExchange t) {
 
 		String method = t.getRequestMethod();
 
@@ -129,8 +126,7 @@ public class ServerHandler implements HttpHandler {
 
 			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.out.println(":c");
+//			e.printStackTrace();
 			return false;
 		}
 	}
