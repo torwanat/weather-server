@@ -88,7 +88,7 @@ public class ServerHandler implements HttpHandler {
 			JSONObject requestBody = new JSONObject(payload);
 			String targetBodyName = requestBody.getString("target_body_name");
 			String centerBodyName = requestBody.getString("center_body_name");
-			ZonedDateTime epoch = ZonedDateTime.parse(requestBody.getString("epoch"), Constants.FORMATTER);
+			ZonedDateTime epoch = ZonedDateTime.parse(requestBody.getString("epoch"));
 
 			boolean hasOrbitalElements = requestBody.has("orbital_elements");
 			boolean hasStateVector = requestBody.has("state_vector");
