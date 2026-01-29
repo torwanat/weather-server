@@ -1,18 +1,28 @@
 package com.o3.server;
 
+import com.o3.server.observations.ObservationRecord;
+import com.o3.server.observations.OrbitalElements;
+import com.o3.server.observations.StateVector;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ServerHandler implements HttpHandler {
-	ArrayList<String> database = new ArrayList<String>();
+	ArrayList<String> database = new ArrayList<>();
+	ArrayList<ObservationRecord> observations = new ArrayList<>();
 
 	@Override
 	public void handle(HttpExchange t) throws IOException {
@@ -23,8 +33,8 @@ public class ServerHandler implements HttpHandler {
 			String response = handleGETRequest(t);
 			handleGETResponse(t, response);
 		} else if ("POST".equals(method)) {
-			handlePOSTRequest(t);
-			handlePOSTResponse(t);
+			boolean success = handlePOSTRequest(t);
+			handlePOSTResponse(t, success? 200 : 400);
 		} else {
 			handleRubbishResponse(t);
 		}
@@ -87,13 +97,13 @@ public class ServerHandler implements HttpHandler {
 		os.close();
 	}
 
-	private void handlePOSTRequest(HttpExchange t){
-		String messageToAdd = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-		database.add(messageToAdd);
+	private boolean handlePOSTRequest(HttpExchange t){
+		String payload = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+		return parsePOSTRequest(payload);
 	}
 
-	private void handlePOSTResponse(HttpExchange t) throws IOException{
-		t.sendResponseHeaders(200, -1);
+	private void handlePOSTResponse(HttpExchange t, int code) throws IOException{
+		t.sendResponseHeaders(code, -1);
 		OutputStream os = t.getResponseBody();
 		os.flush();
 		os.close();
@@ -107,5 +117,55 @@ public class ServerHandler implements HttpHandler {
 		os.write(responseString.getBytes());
 		os.flush();
 		os.close();
+	}
+
+	private boolean parsePOSTRequest(String payload){
+		try {
+			JSONObject requestBody = new JSONObject(payload);
+			String targetBodyName = requestBody.getString("target_body_name");
+			String centerBodyName = requestBody.getString("center_body_name");
+			ZonedDateTime epoch = ZonedDateTime.parse(requestBody.getString("epoch"), Constants.FORMATTER);
+
+			boolean hasOrbitalElements = requestBody.has("orbital_elements");
+			boolean hasStateVector = requestBody.has("state_vector");
+
+			OrbitalElements orbitalElements = null;
+			StateVector stateVector = null;
+
+			if (hasOrbitalElements) {
+				double semiMajorAxisAu = requestBody.getJSONObject("orbital_elements").getDouble("semi_major_axis_au");
+				double eccentricity = requestBody.getJSONObject("orbital_elements").getDouble("eccentricity");
+				double inclinationDeg = requestBody.getJSONObject("orbital_elements").getDouble("inclination_deg");
+				double longitudeAscendingNodeDeg = requestBody.getJSONObject("orbital_elements").getDouble("longitude_ascending_node_deg");
+				double argumentOfPeriapsisDeg = requestBody.getJSONObject("orbital_elements").getDouble("argument_of_periapsis_deg");
+				double meanAnomalyDeg = requestBody.getJSONObject("orbital_elements").getDouble("mean_anomaly_deg");
+				orbitalElements = new OrbitalElements(semiMajorAxisAu, eccentricity, inclinationDeg, longitudeAscendingNodeDeg, argumentOfPeriapsisDeg, meanAnomalyDeg);
+			}
+
+			if (hasStateVector) {
+				JSONArray positionAuJSON = requestBody.getJSONObject("state_vector").getJSONArray("position_au");
+				JSONArray velocityAuPerDayJSON = requestBody.getJSONObject("state_vector").getJSONArray("velocity_au_per_day");
+				List<Double> positionAu = IntStream.range(0, positionAuJSON.length()).mapToObj(positionAuJSON::getDouble).toList();
+				List<Double> velocityAuPerDay = IntStream.range(0, velocityAuPerDayJSON.length()).mapToObj(velocityAuPerDayJSON::getDouble).toList();
+				stateVector = new StateVector(positionAu, velocityAuPerDay);
+			}
+
+			ObservationRecord observationRecord;
+			if (hasOrbitalElements && hasStateVector){
+				observationRecord = new ObservationRecord(targetBodyName, centerBodyName, epoch, orbitalElements, stateVector);
+			} else if (hasOrbitalElements) {
+				observationRecord = new ObservationRecord(targetBodyName, centerBodyName, epoch, orbitalElements);
+			} else if (hasStateVector) {
+				observationRecord = new ObservationRecord(targetBodyName, centerBodyName, epoch, stateVector);
+			} else {
+				return false;
+			}
+
+			observations.add(observationRecord);
+
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 }

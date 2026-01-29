@@ -1,5 +1,6 @@
 package com.o3.server.observations;
 
+import com.o3.server.Constants;
 import org.json.JSONObject;
 import org.json.JSONPropertyIgnore;
 import org.json.JSONPropertyName;
@@ -120,7 +121,7 @@ public class ObservationRecord {
 	public String getEpochString() {
 		return epoch
 				.withZoneSameInstant(ZoneOffset.UTC)
-				.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
+				.format(Constants.FORMATTER);
 	}
 
 	@JSONPropertyIgnore
