@@ -55,26 +55,6 @@ public class RegistrationHandler implements HttpHandler {
 		}
 	}
 
-//	private void handlePOSTResponse(HttpExchange t, boolean success) throws IOException {
-//		String responseString = success? "User added successfully" : "Error while adding user";
-//		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
-//		t.sendResponseHeaders(success? 200 : 403, bytes.length);
-//		OutputStream os = t.getResponseBody();
-//		os.write(responseString.getBytes());
-//		os.flush();
-//		os.close();
-//	}
-//
-//	private void handleNotSupportedRequest(HttpExchange t) throws IOException {
-//		String responseString = "Not supported";
-//		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
-//		t.sendResponseHeaders(400, bytes.length);
-//		OutputStream os = t.getResponseBody();
-//		os.write(responseString.getBytes());
-//		os.flush();
-//		os.close();
-//	}
-
 	private void handleResponse(HttpExchange t, String responseString, int code) throws IOException {
 		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
 		t.sendResponseHeaders(code, bytes.length);
