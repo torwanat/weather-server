@@ -45,7 +45,7 @@ public class ServerHandler implements HttpHandler {
 		}
 
 		JSONArray responseObservations = new JSONArray();
-		observations.stream().map(ObservationRecord::toJson).forEach(responseObservations::put);
+		observations.stream().map(ObservationRecord::toJSON).forEach(responseObservations::put);
 
 		String responseString = responseObservations.toString();
 		handleResponseWithData(t, responseString, 200);
