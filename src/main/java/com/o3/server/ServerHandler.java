@@ -30,71 +30,28 @@ public class ServerHandler implements HttpHandler {
 		String method = t.getRequestMethod();
 
 		if ("GET".equals(method)) {
-			String response = handleGETRequest(t);
-			handleGETResponse(t, response);
+			handleGETRequest(t);
 		} else if ("POST".equals(method)) {
 			boolean success = handlePOSTRequest(t);
-			handlePOSTResponse(t, success? 200 : 400);
+			handleEmptyResponse(t, success? 200 : 400);
 		} else {
-			handleRubbishResponse(t);
+			handleResponseWithData(t, "Not supported", 400);
 		}
 	}
 
-	private String handleGETRequest(HttpExchange t){
+	private void handleGETRequest(HttpExchange t){
 
-		StringBuilder responseHTMLBuilder = new StringBuilder();
-		responseHTMLBuilder.append("<html>")
-			.append("<head>")
-			.append("<meta charset=\"UTF-8\"")
-			.append("</head>")
-			.append("<body>")
-			.append("<div>");
-
-		if (!database.isEmpty()){
-			for (String message : database){
-				responseHTMLBuilder.append("<div style=\"" +
-						"border: 1px solid black; " +
-						"margin: 5px; " +
-						"padding: 0 40px; " +
-						"border-radius: 30px; " +
-						"width: fit-content; " +
-						"/*font-family: 'Comic Sans MS', 'Comic Sans', cursive; " +
-						"color: #fe019a*/\">")
-					.append("<h4>")
-					.append(message)
-					.append("</h4>")
-					.append("</div>");
-			}
-		} else {
-			responseHTMLBuilder.append("<div style=\"" +
-				"border: 1px solid black; " +
-				"margin: 5px; " +
-				"padding: 0 40px; " +
-				"border-radius: 30px; " +
-				"width: fit-content; " +
-				"/*font-family: 'Comic Sans MS', 'Comic Sans', cursive; " +
-				"color: #fe019a*/\">")
-				.append("<h4>")
-				.append("No messages")
-				.append("</h4>")
-				.append("</div>");
+		if (observations.isEmpty()){
+			System.out.println("Empty");
+			handleEmptyResponse(t, 204);
+			return;
 		}
 
+		JSONArray responseObservations = new JSONArray();
+		observations.stream().map(ObservationRecord::toJson).forEach(responseObservations::put);
 
-		responseHTMLBuilder.append("</div>")
-			.append("</body>")
-			.append("</html>");
-
-		return responseHTMLBuilder.toString();
-	}
-
-	private void handleGETResponse(HttpExchange t, String responseString) throws IOException{
-		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
-		t.sendResponseHeaders(200, bytes.length);
-		OutputStream os = t.getResponseBody();
-		os.write(responseString.getBytes());
-		os.flush();
-		os.close();
+		String responseString = responseObservations.toString();
+		handleResponseWithData(t, responseString, 200);
 	}
 
 	private boolean handlePOSTRequest(HttpExchange t){
@@ -102,21 +59,28 @@ public class ServerHandler implements HttpHandler {
 		return parsePOSTRequest(payload);
 	}
 
-	private void handlePOSTResponse(HttpExchange t, int code) throws IOException{
-		t.sendResponseHeaders(code, -1);
-		OutputStream os = t.getResponseBody();
-		os.flush();
-		os.close();
+	private void handleEmptyResponse(HttpExchange t, int code){
+		try {
+			t.sendResponseHeaders(code, -1);
+			OutputStream os = t.getResponseBody();
+			os.flush();
+			os.close();
+		} catch (Exception e){
+			e.printStackTrace();
+		}
 	}
 
-	private void handleRubbishResponse(HttpExchange t) throws IOException{
-		String responseString = "Not supported";
-		byte [] bytes = responseString.getBytes(StandardCharsets.UTF_8);
-		t.sendResponseHeaders(400, bytes.length);
-		OutputStream os = t.getResponseBody();
-		os.write(responseString.getBytes());
-		os.flush();
-		os.close();
+	private void handleResponseWithData(HttpExchange t, String responseString, int code) {
+		try {
+			byte[] bytes = responseString.getBytes(StandardCharsets.UTF_8);
+			t.sendResponseHeaders(code, bytes.length);
+			OutputStream os = t.getResponseBody();
+			os.write(responseString.getBytes());
+			os.flush();
+			os.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	private boolean parsePOSTRequest(String payload){
@@ -165,6 +129,8 @@ public class ServerHandler implements HttpHandler {
 
 			return true;
 		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println(":c");
 			return false;
 		}
 	}
