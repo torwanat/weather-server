@@ -61,11 +61,11 @@ public class Server {
 	}
 
 	private static SSLContext myServerSSLContext(String[] args) throws Exception {
-//		char[] passphrase = args[1].toCharArray(); for pipeline
-		char[] passphrase = "passwd".toCharArray();
+		char[] passphrase = args[1].toCharArray();
+//		char[] passphrase = "passwd".toCharArray();
 		KeyStore ks = KeyStore.getInstance("JKS");
-//		ks.load(new FileInputStream(args[0]), passphrase); for pipeline
-		ks.load(new FileInputStream("keystore.jks"), passphrase);
+		ks.load(new FileInputStream(args[0]), passphrase);
+//		ks.load(new FileInputStream("keystore.jks"), passphrase);
 
 		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
 		kmf.init(ks, passphrase);
