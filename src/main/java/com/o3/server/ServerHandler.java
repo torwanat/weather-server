@@ -12,14 +12,19 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ServerHandler implements HttpHandler {
-	ArrayList<ObservationRecord> observations = new ArrayList<>();
+	private ServerDatabase db = null;
+
+	public ServerHandler() {
+		super();
+		db = ServerDatabase.getInstance();
+	}
 
 	@Override
 	public void handle(HttpExchange t) {
@@ -37,23 +42,28 @@ public class ServerHandler implements HttpHandler {
 	}
 
 	private void handleGETRequest(HttpExchange t){
+		try {
+			JSONArray responseObservations = db.getRecords();
 
-		if (observations.isEmpty()){
-			System.out.println("Empty");
-			handleEmptyResponse(t, 204);
-			return;
+			if (responseObservations.isEmpty()){
+				System.out.println("Empty");
+				handleEmptyResponse(t, 204);
+				return;
+			}
+
+			String responseString = responseObservations.toString();
+			handleResponseWithData(t, responseString, 200);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			handleResponseWithData(t, "Internal server error", 500);
 		}
-
-		JSONArray responseObservations = new JSONArray();
-		observations.stream().map(ObservationRecord::toJSON).forEach(responseObservations::put);
-
-		String responseString = responseObservations.toString();
-		handleResponseWithData(t, responseString, 200);
 	}
 
 	private boolean handlePOSTRequest(HttpExchange t){
 		String payload = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-		return parsePOSTRequest(payload);
+		String username = t.getPrincipal().getUsername();
+		return parsePOSTRequest(payload, username);
 	}
 
 	private void handleEmptyResponse(HttpExchange t, int code){
@@ -80,7 +90,7 @@ public class ServerHandler implements HttpHandler {
 		}
 	}
 
-	private boolean parsePOSTRequest(String payload){
+	private boolean parsePOSTRequest(String payload, String username) {
 		try {
 			JSONObject requestBody = new JSONObject(payload);
 			String targetBodyName = requestBody.getString("target_body_name");
@@ -122,11 +132,13 @@ public class ServerHandler implements HttpHandler {
 				return false;
 			}
 
-			observations.add(observationRecord);
+			String recordPayload = requestBody.getJSONObject("metadata").getString("record_payload");
+
+			db.addRecord(observationRecord, recordPayload, username);
 
 			return true;
 		} catch (Exception e) {
-//			e.printStackTrace();
+			e.printStackTrace();
 			return false;
 		}
 	}
