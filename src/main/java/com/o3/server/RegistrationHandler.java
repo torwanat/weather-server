@@ -13,10 +13,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
 public class RegistrationHandler implements HttpHandler {
-	UserAuthenticator authenticator;
+	UserAuthenticatorDB authenticator;
 
-	RegistrationHandler(UserAuthenticator userAuthenticator){
-		authenticator = userAuthenticator;
+	RegistrationHandler(UserAuthenticatorDB userAuthenticatorDB){
+		authenticator = userAuthenticatorDB;
 	}
 
 	@Override
@@ -38,14 +38,14 @@ public class RegistrationHandler implements HttpHandler {
 				String username = requestBody.getString("username");
 				String password = requestBody.getString("password");
 				String email = requestBody.getString("email");
-				if (username != null && password != null && email != null && !username.isEmpty() && !password.isEmpty() && !email.isEmpty()){
-					if (authenticator.addUser(username, password, email)) {
+				String nickname = requestBody.getString("nickname");
+				if (username != null && password != null  && !username.isEmpty() && !password.isEmpty()){
+					if (authenticator.addUser(username, password, email, nickname)) {
 						handleResponse(t, "User added successfully", 200);
-						return;
 					} else {
 						handleResponse(t, "User already exists", 403);
-						return;
 					}
+					return;
 				}
 				handleResponse(t, "Empty fields not allowed", 400);
 			} catch (JSONException e) {

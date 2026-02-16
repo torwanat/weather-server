@@ -6,11 +6,13 @@ public class User {
 	private String username;
 	private String password;
 	private String email;
+	private String nickname;
 
-	public User(String username, String password, String email){
+	public User(String username, String password, String email, String nickname) {
 		this.username = username;
 		this.password = password;
 		this.email = email;
+		this.nickname = nickname;
 	}
 
 	public User(String username, String password){
@@ -30,6 +32,8 @@ public class User {
 		this.email = email;
 	}
 
+	public void setNickname(String nickname) { this.nickname = nickname; }
+
 	public String getUsername() {
 		return username;
 	}
@@ -41,6 +45,9 @@ public class User {
 	public String getPassword() {
 		return password;
 	}
+
+	public String getNickname() { return nickname; }
+
 
 	@Override
 	public boolean equals(Object obj) {

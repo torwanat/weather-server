@@ -458,3 +458,5 @@ Temporary Items
 *.vsix
 
 .idea
+
+ServerDatabase

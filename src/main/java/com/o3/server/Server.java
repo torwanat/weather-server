@@ -33,7 +33,7 @@ public class Server {
 			});
 
 			final HttpContext serverContext = server.createContext("/datarecord", new ServerHandler());
-			UserAuthenticator authenticator = new UserAuthenticator();
+			UserAuthenticatorDB authenticator = new UserAuthenticatorDB();
 			serverContext.setAuthenticator(authenticator);
 
 			server.createContext("/registration", new RegistrationHandler(authenticator));
