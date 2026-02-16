@@ -32,7 +32,7 @@ public class ServerDatabase {
 	}
 
 	private void initDb() throws SQLException {
-		String dbName = "ServerDatabase";
+		String dbName = System.getenv("DATABASE_PATH");
 		String database = "jdbc:sqlite:" + dbName;
 
 		dbConnection = DriverManager.getConnection(database);
