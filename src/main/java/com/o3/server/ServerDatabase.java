@@ -167,7 +167,9 @@ public class ServerDatabase {
 			JSONObject data = new JSONObject(rs.getString("data"));
 
 			Metadata metadata = new Metadata(timestamp, recordOwner, id, payload);
-			JSONObject metadataJSON = new JSONObject(metadata.toJSON());
+			JSONObject metadataJSON = metadata.toJSON();
+
+			System.out.println(metadataJSON);
 
 			if(rs.getString("observatories") != null) {
 				JSONArray observatoriesJSON = new JSONArray(rs.getString("observatories"));
