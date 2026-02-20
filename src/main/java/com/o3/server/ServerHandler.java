@@ -1,6 +1,7 @@
 package com.o3.server;
 
 import com.o3.server.observations.ObservationRecord;
+import com.o3.server.observations.Observatory;
 import com.o3.server.observations.OrbitalElements;
 import com.o3.server.observations.StateVector;
 import com.sun.net.httpserver.HttpExchange;
@@ -14,6 +15,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -99,6 +101,7 @@ public class ServerHandler implements HttpHandler {
 
 			boolean hasOrbitalElements = requestBody.has("orbital_elements");
 			boolean hasStateVector = requestBody.has("state_vector");
+			boolean hasObservatory =  requestBody.getJSONObject("metadata").has("observatory");
 
 			OrbitalElements orbitalElements = null;
 			StateVector stateVector = null;
@@ -134,8 +137,13 @@ public class ServerHandler implements HttpHandler {
 
 			String recordPayload = requestBody.getJSONObject("metadata").getString("record_payload");
 
-			db.addRecord(observationRecord, recordPayload, username);
+			if(hasObservatory){
+				JSONArray observatoriesJSON = requestBody.getJSONObject("metadata").getJSONArray("observatory");
+				db.addRecord(observationRecord, recordPayload, username, observatoriesJSON);
+				return true;
+			}
 
+			db.addRecord(observationRecord, recordPayload, username);
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();

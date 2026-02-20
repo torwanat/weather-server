@@ -2,14 +2,15 @@ package com.o3.server;
 
 import com.o3.server.observations.Metadata;
 import com.o3.server.observations.ObservationRecord;
+import com.o3.server.observations.Observatory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.sql.*;
-import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerDatabase {
 	private Connection dbConnection = null;
@@ -28,6 +29,7 @@ public class ServerDatabase {
 			initDb();
 		} catch (SQLException e) {
 			System.out.println("Database already found");
+//			e.printStackTrace();
 		}
 	}
 
@@ -53,7 +55,9 @@ public class ServerDatabase {
 				"timestamp INTEGER NOT NULL," +
 				"owner VARCHAR(50) NOT NULL," +
 				"payload TEXT NOT NULL," +
+				"observatories TEXT," +
 				"data TEXT NOT NULL," +
+				"CHECK (observatories IS NULL OR json_valid(observatories))," +
 				"CHECK (json_valid(data))" +
 				")";
 			createStatement.executeUpdate(createDataTable);
@@ -116,6 +120,24 @@ public class ServerDatabase {
 		insertObservationQuery.close();
 	}
 
+	public void addRecord(ObservationRecord observationRecord, String payload, String username, JSONArray observatories) throws SQLException {
+		ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+		long timestamp = now.toInstant().toEpochMilli();
+
+		String nickname = getNickname(username);
+
+		PreparedStatement insertObservationQuery = dbConnection.prepareStatement("INSERT INTO data (timestamp, owner, payload, observatories, data) " +
+			"VALUES (?, ?, ?, ?, ?)");
+		insertObservationQuery.setLong(1, timestamp);
+		insertObservationQuery.setString(2, nickname);
+		insertObservationQuery.setString(3, payload);
+		insertObservationQuery.setString(4, observatories.toString());
+		insertObservationQuery.setString(5, observationRecord.toJSON().toString());
+
+		insertObservationQuery.executeUpdate();
+		insertObservationQuery.close();
+	}
+
 	private String getNickname(String username) throws SQLException {
 		PreparedStatement getNicknameQuery = dbConnection.prepareStatement("SELECT nickname FROM users WHERE username = ?");
 		getNicknameQuery.setString(1, username);
@@ -138,7 +160,26 @@ public class ServerDatabase {
 			int id = rs.getInt("id");
 			String payload = rs.getString("payload");
 			JSONObject data = new JSONObject(rs.getString("data"));
+
 			Metadata metadata = new Metadata(timestamp, recordOwner, id, payload);
+
+			if(rs.getString("observatories") != null) {
+				JSONArray observatoriesJSON = new JSONArray(rs.getString("observatories"));
+				List<Observatory> observatories = new ArrayList<Observatory>();
+
+				for (int i = 0; i < observatoriesJSON.length(); i++) {
+					JSONObject observatoryJSON = observatoriesJSON.getJSONObject(i);
+					Observatory observatory = new Observatory(
+						observatoryJSON.getDouble("longitude"),
+						observatoryJSON.getDouble("latitude"),
+						observatoryJSON.getString("observatory_name")
+					);
+					observatories.add(observatory);
+				}
+
+				metadata.setObservatories(observatories);
+			}
+
 			data.put("metadata", metadata.toJSON());
 			recordsArray.put(data);
 		}

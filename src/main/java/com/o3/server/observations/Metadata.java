@@ -6,12 +6,30 @@ import org.json.JSONPropertyName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 public class Metadata {
 	private ZonedDateTime recordTimeReceived;
 	private String recordOwner;
 	private int id;
 	private String recordPayload;
+	private List<Observatory> observatories;
+
+	public Metadata(ZonedDateTime recordTimeReceived, String recordOwner, String recordPayload, int id, List<Observatory> observatories) {
+		this.recordTimeReceived = recordTimeReceived;
+		this.recordOwner = recordOwner;
+		this.recordPayload = recordPayload;
+		this.id = id;
+		this.observatories = observatories;
+	}
+
+	public Metadata(long timestamp, String recordOwner, int id, String recordPayload, List<Observatory> observatories) {
+		this.recordTimeReceived = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC);
+		this.recordOwner = recordOwner;
+		this.recordPayload = recordPayload;
+		this.id = id;
+		this.observatories = observatories;
+	}
 
 	public Metadata(ZonedDateTime recordTimeReceived, String recordOwner, int id, String recordPayload){
 		this.recordTimeReceived = recordTimeReceived;
@@ -64,4 +82,13 @@ public class Metadata {
 	}
 
 	public JSONObject toJSON() { return new JSONObject(this); }
+
+	@JSONPropertyName("observatory")
+	public List<Observatory> getObservatories() {
+		return observatories;
+	}
+
+	public void setObservatories(List<Observatory> observatories) {
+		this.observatories = observatories;
+	}
 }
