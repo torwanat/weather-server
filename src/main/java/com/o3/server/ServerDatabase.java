@@ -3,6 +3,7 @@ package com.o3.server;
 import com.o3.server.observations.Metadata;
 import com.o3.server.observations.ObservationRecord;
 import com.o3.server.observations.Observatory;
+import org.apache.commons.codec.digest.Crypt;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -72,10 +73,12 @@ public class ServerDatabase {
 			return false;
 		}
 
+		String hashedPassword = hashPassword(user.getString("password"));
+
 		PreparedStatement setUserQuery = dbConnection.prepareStatement("INSERT INTO users (username, password, email, nickname) " +
 			"VALUES (?, ?, ?, ?)");
 		setUserQuery.setString(1, user.getString("username"));
-		setUserQuery.setString(2, user.getString("password"));
+		setUserQuery.setString(2, hashedPassword);
 		setUserQuery.setString(3, user.getString("email"));
 		setUserQuery.setString(4, user.getString("nickname"));
 
@@ -91,7 +94,12 @@ public class ServerDatabase {
 
 		ResultSet rs = authenticateQuery.executeQuery();
 
-		return rs.next() && rs.getString("password").equals(password);
+		if(rs.next()){
+			String hashedPassword = rs.getString("password");
+			return hashedPassword.equals(Crypt.crypt(password, hashedPassword));
+		}
+
+		return false;
 	}
 
 	private boolean checkIfUserExists (String username) throws SQLException {
@@ -101,6 +109,10 @@ public class ServerDatabase {
 		ResultSet rs = checkUserQuery.executeQuery();
 
 		return rs.next();
+	}
+
+	private String hashPassword (String password) {
+		return Crypt.crypt(password);
 	}
 
 	public void addRecord(ObservationRecord observationRecord, String payload, String username) throws SQLException {
