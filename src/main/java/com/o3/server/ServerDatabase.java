@@ -165,7 +165,7 @@ public class ServerDatabase {
 
 			if(rs.getString("observatories") != null) {
 				JSONArray observatoriesJSON = new JSONArray(rs.getString("observatories"));
-				List<Observatory> observatories = new ArrayList<Observatory>();
+				List<Observatory> observatories = new ArrayList<>();
 
 				for (int i = 0; i < observatoriesJSON.length(); i++) {
 					JSONObject observatoryJSON = observatoriesJSON.getJSONObject(i);
