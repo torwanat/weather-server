@@ -115,36 +115,31 @@ public class ServerDatabase {
 		return Crypt.crypt(password);
 	}
 
-	public void addRecord(ObservationRecord observationRecord, String payload, String username) throws SQLException {
+	public void addRecord(JSONObject observationRecordJSON, String payload, String username, List<Observatory> observatories) throws SQLException {
 		ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
 		long timestamp = now.toInstant().toEpochMilli();
 
 		String nickname = getNickname(username);
 
-		PreparedStatement insertObservationQuery = dbConnection.prepareStatement("INSERT INTO data (timestamp, owner, payload, data) " +
-			"VALUES (?, ?, ?, ?)");
-		insertObservationQuery.setLong(1, timestamp);
-		insertObservationQuery.setString(2, nickname);
-		insertObservationQuery.setString(3, payload);
-		insertObservationQuery.setString(4, observationRecord.toJSON().toString());
+		PreparedStatement insertObservationQuery;
 
-		insertObservationQuery.executeUpdate();
-		insertObservationQuery.close();
-	}
-
-	public void addRecord(ObservationRecord observationRecord, String payload, String username, JSONArray observatories) throws SQLException {
-		ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
-		long timestamp = now.toInstant().toEpochMilli();
-
-		String nickname = getNickname(username);
-
-		PreparedStatement insertObservationQuery = dbConnection.prepareStatement("INSERT INTO data (timestamp, owner, payload, observatories, data) " +
-			"VALUES (?, ?, ?, ?, ?)");
-		insertObservationQuery.setLong(1, timestamp);
-		insertObservationQuery.setString(2, nickname);
-		insertObservationQuery.setString(3, payload);
-		insertObservationQuery.setString(4, observatories.toString());
-		insertObservationQuery.setString(5, observationRecord.toJSON().toString());
+		if (observatories.isEmpty()) {
+			insertObservationQuery = dbConnection.prepareStatement("INSERT INTO data (timestamp, owner, payload, data) " +
+				"VALUES (?, ?, ?, ?)");
+			insertObservationQuery.setLong(1, timestamp);
+			insertObservationQuery.setString(2, nickname);
+			insertObservationQuery.setString(3, payload);
+			insertObservationQuery.setString(4, observationRecordJSON.toString());
+		} else {
+			JSONArray observatoriesJSONArray = new JSONArray(observatories);
+			insertObservationQuery = dbConnection.prepareStatement("INSERT INTO data (timestamp, owner, payload, observatories, data) " +
+				"VALUES (?, ?, ?, ?, ?)");
+			insertObservationQuery.setLong(1, timestamp);
+			insertObservationQuery.setString(2, nickname);
+			insertObservationQuery.setString(3, payload);
+			insertObservationQuery.setString(4, observatoriesJSONArray.toString());
+			insertObservationQuery.setString(5, observationRecordJSON.toString());
+		}
 
 		insertObservationQuery.executeUpdate();
 		insertObservationQuery.close();
@@ -174,25 +169,15 @@ public class ServerDatabase {
 			JSONObject data = new JSONObject(rs.getString("data"));
 
 			Metadata metadata = new Metadata(timestamp, recordOwner, id, payload);
+			JSONObject metadataJSON = new JSONObject(metadata.toJSON());
 
 			if(rs.getString("observatories") != null) {
 				JSONArray observatoriesJSON = new JSONArray(rs.getString("observatories"));
-				List<Observatory> observatories = new ArrayList<>();
 
-				for (int i = 0; i < observatoriesJSON.length(); i++) {
-					JSONObject observatoryJSON = observatoriesJSON.getJSONObject(i);
-					Observatory observatory = new Observatory(
-						observatoryJSON.getDouble("longitude"),
-						observatoryJSON.getDouble("latitude"),
-						observatoryJSON.getString("observatory_name")
-					);
-					observatories.add(observatory);
-				}
-
-				metadata.setObservatories(observatories);
+				metadataJSON.put("observatory", observatoriesJSON);
 			}
 
-			data.put("metadata", metadata.toJSON());
+			data.put("metadata", metadataJSON);
 			recordsArray.put(data);
 		}
 

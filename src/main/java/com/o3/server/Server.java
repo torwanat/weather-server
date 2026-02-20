@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpsConfigurator;
@@ -38,7 +40,7 @@ public class Server {
 
 			server.createContext("/registration", new RegistrationHandler(authenticator));
 
-			server.setExecutor(null);
+			server.setExecutor(Executors.newCachedThreadPool());
 			server.start();
 		} catch (IllegalStateException e) {
 			System.out.println("Server already started!");

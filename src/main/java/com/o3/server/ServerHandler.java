@@ -30,6 +30,7 @@ public class ServerHandler implements HttpHandler {
 
 	@Override
 	public void handle(HttpExchange t) {
+		System.out.println("Request handled in thread " + Thread.currentThread().getName());
 
 		String method = t.getRequestMethod();
 
@@ -103,8 +104,13 @@ public class ServerHandler implements HttpHandler {
 			boolean hasStateVector = requestBody.has("state_vector");
 			boolean hasObservatory =  requestBody.getJSONObject("metadata").has("observatory");
 
+			if (!hasOrbitalElements && !hasStateVector){
+				return false;
+			}
+
 			OrbitalElements orbitalElements = null;
 			StateVector stateVector = null;
+			List<Observatory> observatories = new ArrayList<>();
 
 			if (hasOrbitalElements) {
 				double semiMajorAxisAu = requestBody.getJSONObject("orbital_elements").getDouble("semi_major_axis_au");
@@ -124,29 +130,36 @@ public class ServerHandler implements HttpHandler {
 				stateVector = new StateVector(positionAu, velocityAuPerDay);
 			}
 
-			ObservationRecord observationRecord;
-			if (hasOrbitalElements && hasStateVector){
-				observationRecord = new ObservationRecord(targetBodyName, centerBodyName, epoch, orbitalElements, stateVector);
-			} else if (hasOrbitalElements) {
-				observationRecord = new ObservationRecord(targetBodyName, centerBodyName, epoch, orbitalElements);
-			} else if (hasStateVector) {
-				observationRecord = new ObservationRecord(targetBodyName, centerBodyName, epoch, stateVector);
-			} else {
-				return false;
-			}
+			ObservationRecord observationRecord = new  ObservationRecord(targetBodyName, centerBodyName, epoch);
 
 			String recordPayload = requestBody.getJSONObject("metadata").getString("record_payload");
 
 			if(hasObservatory){
 				JSONArray observatoriesJSON = requestBody.getJSONObject("metadata").getJSONArray("observatory");
-				db.addRecord(observationRecord, recordPayload, username, observatoriesJSON);
-				return true;
+				for(int i = 0; i < observatoriesJSON.length(); i++){
+					JSONObject observatoryJSON = observatoriesJSON.getJSONObject(i);
+					double longitude = observatoryJSON.getDouble("longitude");
+					double latitude = observatoryJSON.getDouble("latitude");
+					String observatoryName = observatoryJSON.getString("observatory_name");
+					Observatory observatory = new Observatory(latitude, longitude, observatoryName);
+					observatories.add(observatory);
+				}
 			}
 
-			db.addRecord(observationRecord, recordPayload, username);
+			JSONObject observationRecordJSON = observationRecord.toJSON();
+			if (hasOrbitalElements) {
+				observationRecordJSON.put("orbital_elements", orbitalElements.toJSON());
+			}
+			if (hasStateVector) {
+				observationRecordJSON.put("state_vector", stateVector.toJSON());
+			}
+
+
+			db.addRecord(observationRecordJSON, recordPayload, username, observatories);
 			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
+			System.out.println("Error while parsing POST request");
 			return false;
 		}
 	}
