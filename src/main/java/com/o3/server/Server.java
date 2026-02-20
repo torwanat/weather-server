@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import com.sun.net.httpserver.HttpContext;

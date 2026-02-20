@@ -1,7 +1,6 @@
 package com.o3.server;
 
 import com.o3.server.observations.Metadata;
-import com.o3.server.observations.ObservationRecord;
 import com.o3.server.observations.Observatory;
 import org.apache.commons.codec.digest.Crypt;
 import org.json.JSONArray;
@@ -10,7 +9,6 @@ import org.json.JSONObject;
 import java.sql.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ServerDatabase {

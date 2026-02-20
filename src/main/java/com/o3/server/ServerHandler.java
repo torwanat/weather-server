@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ServerHandler implements HttpHandler {
-	private ServerDatabase db = null;
+	private final ServerDatabase db;
 
 	public ServerHandler() {
 		super();
@@ -30,7 +30,7 @@ public class ServerHandler implements HttpHandler {
 
 	@Override
 	public void handle(HttpExchange t) {
-		System.out.println("Request handled in thread " + Thread.currentThread().getName());
+//		System.out.println("Request handled in thread " + Thread.currentThread().getName());
 
 		String method = t.getRequestMethod();
 

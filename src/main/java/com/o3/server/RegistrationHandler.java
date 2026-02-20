@@ -39,8 +39,11 @@ public class RegistrationHandler implements HttpHandler {
 				String password = requestBody.getString("password");
 				String email = requestBody.getString("email");
 				String nickname = requestBody.getString("nickname");
+
+				User user = new User(username, password, email, nickname);
+
 				if (username != null && password != null  && !username.isEmpty() && !password.isEmpty()){
-					if (authenticator.addUser(username, password, email, nickname)) {
+					if (authenticator.addUser(user)) {
 						handleResponse(t, "User added successfully", 200);
 					} else {
 						handleResponse(t, "User already exists", 403);

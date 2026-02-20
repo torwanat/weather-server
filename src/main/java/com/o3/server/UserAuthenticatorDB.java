@@ -6,7 +6,7 @@ import org.json.JSONObject;
 import java.sql.SQLException;
 
 public class UserAuthenticatorDB extends BasicAuthenticator {
-	private ServerDatabase db = null;
+	private final ServerDatabase db;
 
 	public UserAuthenticatorDB() {
 		super("datarecord");
@@ -27,16 +27,16 @@ public class UserAuthenticatorDB extends BasicAuthenticator {
 		return isValid;
 	}
 
-	public boolean addUser(String username, String password, String email, String nickname) {
+	public boolean addUser(User user) {
 		boolean result;
 
 		try {
 			result = db.setUser(
 				new JSONObject()
-					.put("username", username)
-					.put("password", password)
-					.put("email", email)
-					.put("nickname", nickname)
+					.put("username", user.getUsername())
+					.put("password", user.getPassword())
+					.put("email", user.getEmail())
+					.put("nickname", user.getNickname())
 			);
 		} catch (SQLException e) {
 			e.printStackTrace();
