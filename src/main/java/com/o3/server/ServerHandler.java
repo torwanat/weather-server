@@ -1,9 +1,6 @@
 package com.o3.server;
 
-import com.o3.server.observations.ObservationRecord;
-import com.o3.server.observations.Observatory;
-import com.o3.server.observations.OrbitalElements;
-import com.o3.server.observations.StateVector;
+import com.o3.server.observations.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
@@ -142,6 +139,17 @@ public class ServerHandler implements HttpHandler {
 					double latitude = observatoryJSON.getDouble("latitude");
 					String observatoryName = observatoryJSON.getString("observatory_name");
 					Observatory observatory = new Observatory(latitude, longitude, observatoryName);
+
+					if (observatoryJSON.has("weather")) {
+						JSONObject weatherJSON = observatoryJSON.getJSONObject("weather");
+						double temperatureInKelvins = weatherJSON.getDouble("temperature_in_kelvins");
+						double cloudinessPercentage = weatherJSON.getDouble("cloudiness_percentage");
+						double backgroundLightVolume = weatherJSON.getDouble("background_light_volume");
+						Weather weather = new Weather(temperatureInKelvins, cloudinessPercentage, backgroundLightVolume);
+
+						observatory.setWeather(weather);
+					}
+
 					observatories.add(observatory);
 				}
 			}
