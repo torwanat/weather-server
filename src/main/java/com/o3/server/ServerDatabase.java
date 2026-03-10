@@ -203,4 +203,8 @@ public class ServerDatabase {
 		}
 		return collectionsIDsArray;
 	}
+
+	public int createCollection() {
+		String addNewCollection = "INSERT INTO collections()";
+	}
 }

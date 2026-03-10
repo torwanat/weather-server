@@ -5,10 +5,10 @@ import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class CollectionHandler implements HttpHandler {
@@ -21,35 +21,77 @@ public class CollectionHandler implements HttpHandler {
 
 	@Override
 	public void handle(HttpExchange t) {
-		String method = t.getRequestMethod();
+		String fullPath = t.getRequestURI().getPath();  // e.g. "/collections/create"
+		String contextPath = t.getHttpContext().getPath();  // "/collections"
+		String subPath = fullPath.substring(contextPath.length());  // "/create"
 
-		if ("GET".equals(method)) {
-			handleGETRequest(t);
-		} else if ("POST".equals(method)) {
-			handlePOSTRequest(t);
-		} else {
-			handleResponseWithData(t, "Not supported", 400);
+		switch (subPath) {
+			case "create":
+				handleCreateCollection(t);
+				break;
+			case "add":
+				handleAddToCollection(t);
+				break;
+			case "":
+				handleCollections(t);
+				break;
+			default:
+				handleGetCollection(t, subPath);
+				break;
 		}
 	}
 
-	private void handleGETRequest(HttpExchange t) {
+	private void handleCollections(HttpExchange t) {
+		String method = t.getRequestMethod();
+
+		if ("GET".equals(method)) {
+			getAllCollections(t);
+		} else {
+			sendResponseWithData(t, "Not supported", 400);
+		}
+	}
+
+	private void handleCreateCollection(HttpExchange t) {
+
+	}
+
+	private void handleAddToCollection(HttpExchange t) {
+
+	}
+
+	private void handleGetCollection(HttpExchange t, String id){
+
+	}
+
+	private void getAllCollections(HttpExchange t) {
 		try {
 			JSONArray responseCollectionsIDs = db.getCollectionsIDs();
 
 			String responseString = responseCollectionsIDs.toString();
-			handleResponseWithData(t, responseString, 200);
+			sendResponseWithData(t, responseString, 200);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void handlePOSTRequest(HttpExchange t) {
-		
+	private void createCollection(HttpExchange t) {
+		try {
+			String payload = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+			if (payload.isEmpty()) {
+
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private boolean addToCollection(int id, List<Integer> idsToAdd) {
+		return true;
 	}
 
 
 
-	private void handleEmptyResponse(HttpExchange t, int code) {
+	private void sendEmptyResponse(HttpExchange t, int code) {
 		try {
 			t.sendResponseHeaders(code, -1);
 			OutputStream os = t.getResponseBody();
@@ -60,7 +102,7 @@ public class CollectionHandler implements HttpHandler {
 		}
 	}
 
-	private void handleResponseWithData(HttpExchange t, String responseString, int code) {
+	private void sendResponseWithData(HttpExchange t, String responseString, int code) {
 		try {
 			byte[] bytes = responseString.getBytes(StandardCharsets.UTF_8);
 			t.sendResponseHeaders(code, bytes.length);
