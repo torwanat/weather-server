@@ -61,6 +61,12 @@ public class ServerDatabase {
 				")";
 			createStatement.executeUpdate(createDataTable);
 
+			String createCollectionsTable = "CREATE TABLE collections(" +
+				"id INTEGER PRIMARY KEY," +
+				"messages TEXT NOT NULL" +
+				")";
+			createStatement.executeUpdate(createCollectionsTable);
+
 			createStatement.close();
 		}
 	}
@@ -182,5 +188,19 @@ public class ServerDatabase {
 		}
 
 		return recordsArray;
+	}
+
+	public JSONArray getCollectionsIDs() throws SQLException {
+		Statement getCollectionsIDsQuery = dbConnection.createStatement();
+		String getCollectionsIDsString = "SELECT id FROM collections";
+		JSONArray collectionsIDsArray = new JSONArray();
+
+		ResultSet rs = getCollectionsIDsQuery.executeQuery(getCollectionsIDsString);
+
+		while (rs.next()) {
+			int id = rs.getInt("id");
+			collectionsIDsArray.put(id);
+		}
+		return collectionsIDsArray;
 	}
 }
