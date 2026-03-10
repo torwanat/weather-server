@@ -21,15 +21,15 @@ public class CollectionHandler implements HttpHandler {
 
 	@Override
 	public void handle(HttpExchange t) {
-		String fullPath = t.getRequestURI().getPath();  // e.g. "/collections/create"
-		String contextPath = t.getHttpContext().getPath();  // "/collections"
-		String subPath = fullPath.substring(contextPath.length());  // "/create"
+		String fullPath = t.getRequestURI().getPath();
+		String contextPath = t.getHttpContext().getPath();
+		String subPath = fullPath.substring(contextPath.length());
 
 		switch (subPath) {
-			case "create":
+			case "/create":
 				handleCreateCollection(t);
 				break;
-			case "add":
+			case "/add":
 				handleAddToCollection(t);
 				break;
 			case "":
