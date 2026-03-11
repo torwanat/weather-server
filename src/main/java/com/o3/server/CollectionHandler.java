@@ -34,6 +34,7 @@ public class CollectionHandler implements HttpHandler {
 			case "/add":
 				handleAddToCollection(t);
 				break;
+			case "/":
 			case "":
 				handleCollections(t);
 				break;

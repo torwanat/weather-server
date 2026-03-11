@@ -37,6 +37,9 @@ public class Server {
 			UserAuthenticatorDB authenticator = new UserAuthenticatorDB();
 			serverContext.setAuthenticator(authenticator);
 
+			final HttpContext collectionContext = server.createContext("/collections", new CollectionHandler());
+			collectionContext.setAuthenticator(authenticator);
+
 			server.createContext("/registration", new RegistrationHandler(authenticator));
 
 			server.setExecutor(Executors.newCachedThreadPool());
