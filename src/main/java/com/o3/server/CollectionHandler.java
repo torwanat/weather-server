@@ -3,11 +3,13 @@ package com.o3.server;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,11 +54,21 @@ public class CollectionHandler implements HttpHandler {
 	}
 
 	private void handleCreateCollection(HttpExchange t) {
-
+		String method = t.getRequestMethod();
+		if ("POST".equals(method)) {
+			createCollection(t);
+		}  else {
+			sendResponseWithData(t, "Not supported", 400);
+		}
 	}
 
 	private void handleAddToCollection(HttpExchange t) {
-
+		String method = t.getRequestMethod();
+		if ("POST".equals(method)) {
+			addToCollection(t);
+		}  else {
+			sendResponseWithData(t, "Not supported", 400);
+		}
 	}
 
 	private void handleGetCollection(HttpExchange t, String id){
@@ -71,25 +83,58 @@ public class CollectionHandler implements HttpHandler {
 			sendResponseWithData(t, responseString, 200);
 		} catch (Exception e) {
 			e.printStackTrace();
+			sendEmptyResponse(t, 400);
 		}
 	}
 
 	private void createCollection(HttpExchange t) {
 		try {
 			String payload = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-			if (payload.isEmpty()) {
+			List<Integer> collectionIDs = new ArrayList<>();
+			if (!payload.isEmpty()) {
+				JSONArray collectionIDsJSON = new JSONArray(payload);
+				for (int i = 0; i < collectionIDsJSON.length(); i++) {
+					collectionIDs.add(collectionIDsJSON.getInt(i));
+				}
+			}
+			int createdCollectionId = db.createCollection(collectionIDs);
 
+			if (createdCollectionId != -1) {
+				JSONObject responseJSON = new JSONObject();
+				responseJSON.put("created_collection_id", createdCollectionId);
+				sendResponseWithData(t, responseJSON.toString(), 200);
+			}  else {
+				sendEmptyResponse(t, 400);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			sendEmptyResponse(t, 400);
 		}
 	}
 
-	private boolean addToCollection(int id, List<Integer> idsToAdd) {
-		return true;
+	private void addToCollection(HttpExchange t) {
+		try {
+			String payload = new BufferedReader(new InputStreamReader(t.getRequestBody(),StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+			List<Integer> idsToAdd = new ArrayList<>();
+
+			JSONObject requestBody = new JSONObject(payload);
+			int collectionId = requestBody.getInt("collection_id");
+			JSONArray idsToAddJSON = requestBody.getJSONArray("message_ids");
+			for (int i = 0; i < idsToAddJSON.length(); i++) {
+				idsToAdd.add(idsToAddJSON.getInt(i));
+			}
+
+			db.addToCollection(collectionId, idsToAdd);
+			sendEmptyResponse(t, 200);
+		} catch (Exception e) {
+			e.printStackTrace();
+			sendEmptyResponse(t, 400);
+		}
 	}
 
+	private void getRecordsFromCollection(HttpExchange t, int id) {
 
+	}
 
 	private void sendEmptyResponse(HttpExchange t, int code) {
 		try {

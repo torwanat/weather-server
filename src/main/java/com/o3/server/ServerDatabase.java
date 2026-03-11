@@ -204,7 +204,29 @@ public class ServerDatabase {
 		return collectionsIDsArray;
 	}
 
-	public int createCollection() {
-		String addNewCollection = "INSERT INTO collections()";
+	public int createCollection(List<Integer> collectionIDs) throws SQLException {
+		PreparedStatement addNewCollectionQuery = dbConnection.prepareStatement("INSERT INTO collections (messages) VALUES (?)",
+			Statement.RETURN_GENERATED_KEYS);
+		addNewCollectionQuery.setString(1, collectionIDs.toString());
+		addNewCollectionQuery.executeUpdate();
+
+		ResultSet rs = addNewCollectionQuery.getGeneratedKeys();
+		if (rs.next()) {
+			return rs.getInt(1);
+		} else  {
+			return -1;
+		}
+	}
+
+	public void addToCollection(int collectionID, List<Integer> idsToAdd) throws SQLException {
+		PreparedStatement addToCollectionQuery = dbConnection.prepareStatement("UPDATE collections SET messages = ? WHERE id = ?");
+		addToCollectionQuery.setString(1, idsToAdd.toString());
+		addToCollectionQuery.setInt(2, collectionID);
+		addToCollectionQuery.executeUpdate();
+		addToCollectionQuery.close();
+	}
+
+	public JSONArray getRecordsFromCollection(int collectionID) throws SQLException {
+		return new JSONArray();
 	}
 }
