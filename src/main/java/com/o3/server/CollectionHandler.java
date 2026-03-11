@@ -71,9 +71,10 @@ public class CollectionHandler implements HttpHandler {
 		}
 	}
 
-	private void handleGetCollection(HttpExchange t, String id){
+	private void handleGetCollection(HttpExchange t, String idPath){
 		try {
-
+			int id = Integer.parseInt(idPath.split("/")[1]);
+			getRecordsFromCollection(t, id);
 		} catch (Exception e) {
 			e.printStackTrace();
 			sendEmptyResponse(t, 400);
