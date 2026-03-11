@@ -9,10 +9,15 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -141,13 +146,8 @@ public class ServerHandler implements HttpHandler {
 					Observatory observatory = new Observatory(latitude, longitude, observatoryName);
 
 					if (observatoryJSON.has("weather")) {
-						JSONObject weatherJSON = observatoryJSON.getJSONObject("weather");
-						double temperatureInKelvins = weatherJSON.getDouble("temperature_in_kelvins");
-						double cloudinessPercentage = weatherJSON.getDouble("cloudiness_percentage");
-						double backgroundLightVolume = weatherJSON.getDouble("background_light_volume");
-						Weather weather = new Weather(temperatureInKelvins, cloudinessPercentage, backgroundLightVolume);
-
-						observatory.setWeather(weather);
+						Weather currentWeather = getWeather(latitude, longitude);
+						observatory.setWeather(currentWeather);
 					}
 
 					observatories.add(observatory);
@@ -170,5 +170,31 @@ public class ServerHandler implements HttpHandler {
 			System.out.println("Error while parsing POST request");
 			return false;
 		}
+	}
+
+	private Weather getWeather(double latitude, double longitude) {
+		try (HttpClient client = HttpClient.newHttpClient()) {
+			HttpRequest request = HttpRequest.newBuilder()
+				.uri(URI.create("http://localhost:4001/wfs?latlon=" + latitude + "," + longitude + "&parameters=Temperature,TotalCloudCover,RadiationGlobalAccumulation"))
+				.GET()
+				.build();
+
+			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+			String responseBody = response.body();
+			List<String> responseBodyParts = Arrays.asList(responseBody.split("BsWfs:ParameterValue"));
+			double temperatureInKelvins = sanitizeValue(responseBodyParts.get(1)) + 273.15;
+			double cloudinessPercentage = sanitizeValue(responseBodyParts.get(3));
+			double backgroundLightVolume = sanitizeValue(responseBodyParts.get(5));
+
+			return new Weather(temperatureInKelvins, cloudinessPercentage, backgroundLightVolume);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new Weather(0.0, 0.0, 0.0);
+		}
+	}
+
+	private double sanitizeValue(String value) {
+		return Double.parseDouble((value.substring(value.indexOf(">") + 1, value.indexOf("<"))).replaceAll(",", "."));
 	}
 }
