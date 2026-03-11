@@ -7,7 +7,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.sql.*;
+import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +58,8 @@ public class ServerDatabase {
 				"timestamp INTEGER NOT NULL," +
 				"owner VARCHAR(50) NOT NULL," +
 				"payload TEXT NOT NULL," +
+				"edited INTEGER," +
+				"update_reason VARCHAR(50)," +
 				"observatories TEXT," +
 				"data TEXT NOT NULL," +
 				"CHECK (observatories IS NULL OR json_valid(observatories))," +
@@ -169,6 +173,72 @@ public class ServerDatabase {
 		return extractRecords(rs);
 	}
 
+	public boolean updateRecord(JSONObject observationRecordJSON, String payload, String username, List<Observatory> observatories, int id, String updateReason) throws SQLException {
+		ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+		long timestamp = now.toInstant().toEpochMilli();
+		long recordTimeReceived;
+
+		String nickname = getNickname(username);
+
+		PreparedStatement getRecordQuery = dbConnection.prepareStatement("SELECT owner, timestamp FROM data WHERE id = ?");
+		getRecordQuery.setInt(1, id);
+
+		ResultSet rs = getRecordQuery.executeQuery();
+		if (rs.next()) {
+			recordTimeReceived = rs.getLong("timestamp");
+			if (!rs.getString("owner").equals(nickname)) {
+				return false;
+			}
+		} else { return false; }
+
+		PreparedStatement updateRecordQuery;
+
+		if (observatories.isEmpty()) {
+			updateRecordQuery = dbConnection.prepareStatement("UPDATE data SET " +
+				"timestamp = ?, " +
+				"owner = ?, " +
+				"edited = ?, " +
+				"update_reason = ?, " +
+				"payload = ?, " +
+				"data = ? " +
+				"WHERE id = ?"
+			);
+			updateRecordQuery.setLong(1, recordTimeReceived);
+			updateRecordQuery.setString(2, nickname);
+			updateRecordQuery.setLong(3, timestamp);
+			updateRecordQuery.setString(4, updateReason);
+			updateRecordQuery.setString(5, payload);
+			updateRecordQuery.setString(6, observationRecordJSON.toString());
+			updateRecordQuery.setInt(7, id);
+		} else {
+			JSONArray observatoriesJSONArray = new JSONArray(observatories);
+
+			updateRecordQuery = dbConnection.prepareStatement("UPDATE data SET " +
+				"timestamp = ?, " +
+				"owner = ?, " +
+				"edited = ?, " +
+				"update_reason = ?, " +
+				"payload = ?, " +
+				"observatories = ?, " +
+				"data = ? " +
+				"WHERE id = ?"
+			);
+			updateRecordQuery.setLong(1, recordTimeReceived);
+			updateRecordQuery.setString(2, nickname);
+			updateRecordQuery.setLong(3, timestamp);
+			updateRecordQuery.setString(4, updateReason);
+			updateRecordQuery.setString(5, payload);
+			updateRecordQuery.setString(6, observatoriesJSONArray.toString());
+			updateRecordQuery.setString(7, observationRecordJSON.toString());
+			updateRecordQuery.setInt(8, id);
+		}
+
+		updateRecordQuery.executeUpdate();
+		updateRecordQuery.close();
+		return true;
+	}
+
+
 	public JSONArray getCollectionsIDs() throws SQLException {
 		Statement getCollectionsIDsQuery = dbConnection.createStatement();
 		String getCollectionsIDsString = "SELECT id FROM collections";
@@ -238,6 +308,13 @@ public class ServerDatabase {
 				JSONArray observatoriesJSON = new JSONArray(rs.getString("observatories"));
 
 				metadataJSON.put("observatory", observatoriesJSON);
+			}
+
+			if(rs.getLong("edited") != 0) {
+				ZonedDateTime editedTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(rs.getLong("edited")), ZoneOffset.UTC);
+				String updateReason = rs.getString("update_reason");
+				metadataJSON.put("update_reason", updateReason);
+				metadataJSON.put("edited", editedTime);
 			}
 
 			data.put("metadata", metadataJSON);
