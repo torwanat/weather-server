@@ -72,7 +72,12 @@ public class CollectionHandler implements HttpHandler {
 	}
 
 	private void handleGetCollection(HttpExchange t, String id){
+		try {
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			sendEmptyResponse(t, 400);
+		}
 	}
 
 	private void getAllCollections(HttpExchange t) {
@@ -133,7 +138,14 @@ public class CollectionHandler implements HttpHandler {
 	}
 
 	private void getRecordsFromCollection(HttpExchange t, int id) {
-
+		try {
+			JSONArray responseRecords = db.getRecordsFromCollection(id);
+			String responseString = responseRecords.toString();
+			sendResponseWithData(t, responseString, 200);
+		} catch (Exception e) {
+			e.printStackTrace();
+			sendEmptyResponse(t, 400);
+		}
 	}
 
 	private void sendEmptyResponse(HttpExchange t, int code) {

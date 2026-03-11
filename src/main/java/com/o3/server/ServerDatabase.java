@@ -9,7 +9,9 @@ import org.json.JSONObject;
 import java.sql.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ServerDatabase {
 	private Connection dbConnection = null;
@@ -161,33 +163,10 @@ public class ServerDatabase {
 	public JSONArray getRecords() throws SQLException {
 		Statement getRecordsQuery = dbConnection.createStatement();
 		String getRecordsString = "SELECT * FROM data";
-		JSONArray recordsArray = new JSONArray();
 
 		ResultSet rs = getRecordsQuery.executeQuery(getRecordsString);
 
-		while (rs.next()) {
-			long timestamp = rs.getLong("timestamp");
-			String recordOwner = rs.getString("owner");
-			int id = rs.getInt("id");
-			String payload = rs.getString("payload");
-			JSONObject data = new JSONObject(rs.getString("data"));
-
-			Metadata metadata = new Metadata(timestamp, recordOwner, id, payload);
-			JSONObject metadataJSON = metadata.toJSON();
-
-			System.out.println(metadataJSON);
-
-			if(rs.getString("observatories") != null) {
-				JSONArray observatoriesJSON = new JSONArray(rs.getString("observatories"));
-
-				metadataJSON.put("observatory", observatoriesJSON);
-			}
-
-			data.put("metadata", metadataJSON);
-			recordsArray.put(data);
-		}
-
-		return recordsArray;
+		return extractRecords(rs);
 	}
 
 	public JSONArray getCollectionsIDs() throws SQLException {
@@ -226,7 +205,64 @@ public class ServerDatabase {
 		addToCollectionQuery.close();
 	}
 
-	public JSONArray getRecordsFromCollection(int collectionID) throws SQLException {
-		return new JSONArray();
+	public JSONArray getRecordsFromCollection(int collectionId) throws SQLException {
+		List<Integer> recordIds = getCollectionRecordIds(collectionId);
+
+		String idCountPlaceholder = recordIds.stream().map(i -> "?").collect(Collectors.joining(", "));
+		String getRecordsByIdsStatement = "SELECT * FROM data WHERE id IN (" + idCountPlaceholder + ")";
+		PreparedStatement getRecordsByIdsQuery = dbConnection.prepareStatement(getRecordsByIdsStatement);
+
+		for (int i = 0; i < recordIds.size(); i++){
+			getRecordsByIdsQuery.setInt(i + 1, recordIds.get(i));
+		}
+
+		ResultSet rs = getRecordsByIdsQuery.executeQuery();
+
+		return extractRecords(rs);
+	}
+
+	private JSONArray extractRecords(ResultSet rs) throws SQLException {
+		JSONArray recordsArray = new JSONArray();
+
+		while (rs.next()) {
+			long timestamp = rs.getLong("timestamp");
+			String recordOwner = rs.getString("owner");
+			int id = rs.getInt("id");
+			String payload = rs.getString("payload");
+			JSONObject data = new JSONObject(rs.getString("data"));
+
+			Metadata metadata = new Metadata(timestamp, recordOwner, id, payload);
+			JSONObject metadataJSON = metadata.toJSON();
+
+			System.out.println(metadataJSON);
+
+			if(rs.getString("observatories") != null) {
+				JSONArray observatoriesJSON = new JSONArray(rs.getString("observatories"));
+
+				metadataJSON.put("observatory", observatoriesJSON);
+			}
+
+			data.put("metadata", metadataJSON);
+			recordsArray.put(data);
+		}
+
+		return recordsArray;
+	}
+
+	private List<Integer> getCollectionRecordIds(int collectionId) throws SQLException {
+		PreparedStatement getCollectionRecordIdsQuery = dbConnection.prepareStatement("SELECT messages FROM collections WHERE id = ?");
+		getCollectionRecordIdsQuery.setInt(1, collectionId);
+		List<Integer> recordIds = new ArrayList<>();
+
+		ResultSet rs = getCollectionRecordIdsQuery.executeQuery();
+		if (rs.next()) {
+			JSONArray recordIdsJSON = new JSONArray(rs.getString("messages"));
+			for (int i = 0; i < recordIdsJSON.length(); i++) {
+				recordIds.add(recordIdsJSON.getInt(i));
+			}
+		}
+		getCollectionRecordIdsQuery.close();
+
+		return recordIds;
 	}
 }
