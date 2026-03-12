@@ -6,10 +6,19 @@ import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -243,10 +252,15 @@ public class ServerHandler implements HttpHandler {
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
 			String responseBody = response.body();
-			List<String> responseBodyParts = Arrays.asList(responseBody.split("BsWfs:ParameterValue"));
-			double temperatureInKelvins = sanitizeValue(responseBodyParts.get(1)) + 273.15;
-			double cloudinessPercentage = sanitizeValue(responseBodyParts.get(3));
-			double backgroundLightVolume = sanitizeValue(responseBodyParts.get(5));
+//			List<String> responseBodyParts = Arrays.asList(responseBody.split("BsWfs:ParameterValue"));
+//			double temperatureInKelvins = sanitizeValue(responseBodyParts.get(1)) + 273.15;
+//			double cloudinessPercentage = sanitizeValue(responseBodyParts.get(3));
+//			double backgroundLightVolume = sanitizeValue(responseBodyParts.get(5));
+
+			Document xml = createXmlFile(responseBody);
+			double temperatureInKelvins = extractParam(xml, "Temperature") + 273.15;
+			double cloudinessPercentage = extractParam(xml, "TotalCloudCover");
+			double backgroundLightVolume = extractParam(xml, "RadiationGlobalAccumulation");
 
 			return new Weather(temperatureInKelvins, cloudinessPercentage, backgroundLightVolume);
 		} catch (Exception e) {
@@ -257,6 +271,27 @@ public class ServerHandler implements HttpHandler {
 
 	private double sanitizeValue(String value) {
 		return Double.parseDouble((value.substring(value.indexOf(">") + 1, value.indexOf("<"))).replaceAll(",", "."));
+	}
+
+	private Document createXmlFile(String xmlString) throws Exception{
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		factory.setNamespaceAware(true);
+		DocumentBuilder builder = factory.newDocumentBuilder();
+		return builder.parse(new InputSource(new StringReader(xmlString)));
+	}
+
+	private double extractParam(Document xml, String paramName) throws Exception{
+		XPath xpath = XPathFactory.newInstance().newXPath();
+		String nameSpace = "declare namespace BsWfs='http://xml.fmi.fi/schema/wfs/2.0';";
+		String expression = nameSpace + "//BsWfs:BsWfsElement[BsWfs:ParameterName='" + paramName + "']/BsWfs:ParameterValue";
+		NodeList nodes = (NodeList) xpath.evaluate(expression, xml, XPathConstants.NODESET);
+
+		if (nodes.getLength() > 0) {
+			String paramValue = nodes.item(0).getTextContent().replace(",", ".");
+			return Double.parseDouble(paramValue);
+		} else {
+			return 0.0;
+		}
 	}
 
 	private int getIdFromParam(String query) {
