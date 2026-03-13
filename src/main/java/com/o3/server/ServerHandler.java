@@ -10,6 +10,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
@@ -28,6 +29,7 @@ import java.sql.SQLException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -252,10 +254,6 @@ public class ServerHandler implements HttpHandler {
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
 			String responseBody = response.body();
-//			List<String> responseBodyParts = Arrays.asList(responseBody.split("BsWfs:ParameterValue"));
-//			double temperatureInKelvins = sanitizeValue(responseBodyParts.get(1)) + 273.15;
-//			double cloudinessPercentage = sanitizeValue(responseBodyParts.get(3));
-//			double backgroundLightVolume = sanitizeValue(responseBodyParts.get(5));
 
 			Document xml = createXmlFile(responseBody);
 			double temperatureInKelvins = extractParam(xml, "Temperature") + 273.15;
@@ -269,10 +267,6 @@ public class ServerHandler implements HttpHandler {
 		}
 	}
 
-	private double sanitizeValue(String value) {
-		return Double.parseDouble((value.substring(value.indexOf(">") + 1, value.indexOf("<"))).replaceAll(",", "."));
-	}
-
 	private Document createXmlFile(String xmlString) throws Exception{
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		factory.setNamespaceAware(true);
@@ -282,9 +276,30 @@ public class ServerHandler implements HttpHandler {
 
 	private double extractParam(Document xml, String paramName) throws Exception{
 		XPath xpath = XPathFactory.newInstance().newXPath();
-		String nameSpace = "declare namespace BsWfs='http://xml.fmi.fi/schema/wfs/2.0';";
-		String expression = nameSpace + "//BsWfs:BsWfsElement[BsWfs:ParameterName='" + paramName + "']/BsWfs:ParameterValue";
-		NodeList nodes = (NodeList) xpath.evaluate(expression, xml, XPathConstants.NODESET);
+		xpath.setNamespaceContext(new NamespaceContext() {
+			@Override
+			public String getNamespaceURI(String prefix) {
+				return switch (prefix) {
+					case "BsWfs" -> "http://xml.fmi.fi/schema/wfs/2.0";
+					case "wfs" -> "http://www.opengis.net/wfs/2.0";
+					case "gml" -> "http://www.opengis.net/gml/3.2";
+					default -> null;
+				};
+			}
+
+			@Override
+			public String getPrefix(String namespaceURI) {
+				return "";
+			}
+
+			@Override
+			public Iterator<String> getPrefixes(String namespaceURI) {
+				return null;
+			}
+		});
+
+		String expr = "//BsWfs:BsWfsElement[BsWfs:ParameterName='" + paramName + "']/BsWfs:ParameterValue";
+		NodeList nodes = (NodeList) xpath.evaluate(expr, xml, XPathConstants.NODESET);
 
 		if (nodes.getLength() > 0) {
 			String paramValue = nodes.item(0).getTextContent().replace(",", ".");
