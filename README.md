@@ -1,6 +1,6 @@
 # Programming 3 assignment
 
-Student Number: Y########
+Student Number: 2509062
 
 ## Introduction
 
@@ -9,3 +9,8 @@ The assignment should be implemented in the [src/main/java/com/o3/server](src/ma
 Any additional tests can be implemented in the [src/main/java/com/o3/server](src/test/java/com/o3/server) subfolder.
 The [pom.xml](pom.xml) file contains the necessary dependencies for the assignment.
 New dependencies will be added to the [pom.xml](pom.xml) file during the course.
+
+## Implemented features
+- Feature 5
+- Feature 6
+- Feature 7
