@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,16 +47,17 @@ public class ServerHandler implements HttpHandler {
 
 		String method = t.getRequestMethod();
 
-		if ("GET".equals(method)) {
-			handleGETRequest(t);
-		} else if ("POST".equals(method)) {
-			boolean success = handlePOSTRequest(t);
-			handleEmptyResponse(t, success ? 200 : 400);
-		} else if ("PUT".equals(method)) {
-			boolean success = handlePUTRequest(t);
-			handleEmptyResponse(t, success ? 200 : 400);
-		} else {
-			handleResponseWithData(t, "Not supported", 400);
+		switch (method) {
+			case "GET" -> handleGETRequest(t);
+			case "POST" -> {
+				boolean success = handlePOSTRequest(t);
+				handleEmptyResponse(t, success ? 200 : 400);
+			}
+			case "PUT" -> {
+				boolean success = handlePUTRequest(t);
+				handleEmptyResponse(t, success ? 200 : 400);
+			}
+			case null, default -> handleResponseWithData(t, "Not supported", 400);
 		}
 	}
 

@@ -26,7 +26,6 @@ public class Server {
 
 			server.setHttpsConfigurator(new HttpsConfigurator(sslContext) {
 				public void configure(HttpsParameters params) {
-					InetSocketAddress remote = params.getClientAddress();
 					SSLContext c = getSSLContext();
 					SSLParameters sslparams = c.getDefaultSSLParameters();
 					params.setSSLParameters(sslparams);

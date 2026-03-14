@@ -28,19 +28,10 @@ public class CollectionHandler implements HttpHandler {
 		String subPath = fullPath.substring(contextPath.length());
 
 		switch (subPath) {
-			case "/create":
-				handleCreateCollection(t);
-				break;
-			case "/add":
-				handleAddToCollection(t);
-				break;
-			case "/":
-			case "":
-				handleCollections(t);
-				break;
-			default:
-				handleGetCollection(t, subPath);
-				break;
+			case "/create" -> handleCreateCollection(t);
+			case "/add" -> handleAddToCollection(t);
+			case "/", "" -> handleCollections(t);
+			default -> handleGetCollection(t, subPath);
 		}
 	}
 
