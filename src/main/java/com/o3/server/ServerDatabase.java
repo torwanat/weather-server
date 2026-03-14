@@ -107,9 +107,13 @@ public class ServerDatabase {
 
 		if(rs.next()){
 			String hashedPassword = rs.getString("password");
+			rs.close();
+			authenticateQuery.close();
 			return hashedPassword.equals(Crypt.crypt(password, hashedPassword));
 		}
 
+		rs.close();
+		authenticateQuery.close();
 		return false;
 	}
 
@@ -119,7 +123,10 @@ public class ServerDatabase {
 
 		ResultSet rs = checkUserQuery.executeQuery();
 
-		return rs.next();
+		boolean exists = rs.next();
+		rs.close();
+		checkUserQuery.close();
+		return exists;
 	}
 
 	private String hashPassword (String password) {
@@ -162,7 +169,16 @@ public class ServerDatabase {
 
 		ResultSet rs = getNicknameQuery.executeQuery();
 
-		return rs.next() ? rs.getString("nickname") : "";
+		if (rs.next()) {
+			String nickname = rs.getString("nickname");
+			rs.close();
+			getNicknameQuery.close();
+			return nickname;
+		}
+
+		rs.close();
+		getNicknameQuery.close();
+		return "";
 	}
 
 	public JSONArray getRecords() throws SQLException {
@@ -171,7 +187,10 @@ public class ServerDatabase {
 
 		ResultSet rs = getRecordsQuery.executeQuery(getRecordsString);
 
-		return extractRecords(rs);
+		JSONArray extractedRecords = extractRecords(rs);
+		rs.close();
+		getRecordsQuery.close();
+		return  extractedRecords;
 	}
 
 	public boolean updateRecord(JSONObject observationRecordJSON, String payload, String username, List<Observatory> observatories, int id, String updateReason) throws SQLException {
@@ -191,6 +210,9 @@ public class ServerDatabase {
 				return false;
 			}
 		} else { return false; }
+
+		rs.close();
+		getRecordQuery.close();
 
 		PreparedStatement updateRecordQuery;
 
@@ -251,6 +273,9 @@ public class ServerDatabase {
 			int id = rs.getInt("id");
 			collectionsIDsArray.put(id);
 		}
+		rs.close();
+		getCollectionsIDsQuery.close();
+
 		return collectionsIDsArray;
 	}
 
@@ -262,8 +287,13 @@ public class ServerDatabase {
 
 		ResultSet rs = addNewCollectionQuery.getGeneratedKeys();
 		if (rs.next()) {
-			return rs.getInt(1);
+			int id = rs.getInt(1);
+			rs.close();
+			addNewCollectionQuery.close();
+			return id;
 		} else  {
+			rs.close();
+			addNewCollectionQuery.close();
 			return -1;
 		}
 	}
@@ -289,7 +319,10 @@ public class ServerDatabase {
 
 		ResultSet rs = getRecordsByIdsQuery.executeQuery();
 
-		return extractRecords(rs);
+		JSONArray extractedRecords = extractRecords(rs);
+		rs.close();
+		getRecordsByIdsQuery.close();
+		return extractedRecords;
 	}
 
 	private JSONArray extractRecords(ResultSet rs) throws SQLException {
@@ -337,6 +370,7 @@ public class ServerDatabase {
 				recordIds.add(recordIdsJSON.getInt(i));
 			}
 		}
+		rs.close();
 		getCollectionRecordIdsQuery.close();
 
 		return recordIds;
