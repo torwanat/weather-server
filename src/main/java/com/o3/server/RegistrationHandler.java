@@ -1,9 +1,11 @@
 package com.o3.server;
 
+import ch.qos.logback.classic.Logger;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,7 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
 public class RegistrationHandler implements HttpHandler {
-	UserAuthenticatorDB authenticator;
+	final UserAuthenticatorDB authenticator;
+	private static final Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
 	RegistrationHandler(UserAuthenticatorDB userAuthenticatorDB){
 		authenticator = userAuthenticatorDB;
@@ -26,6 +29,7 @@ public class RegistrationHandler implements HttpHandler {
 		if("POST".equals(requestMethod)){
 			handlePOSTRequest(exchange);
 		} else {
+			logger.warn("Method {} not supported in /register", requestMethod);
 			handleResponse(exchange, "Not supported", 400);
 		}
 	}
@@ -52,10 +56,12 @@ public class RegistrationHandler implements HttpHandler {
 				}
 				handleResponse(t, "Empty fields not allowed", 400);
 			} catch (JSONException e) {
-				handleResponse(t, "Bad JSON input", 400);
+				logger.error("Bad JSON payload", e);
+				handleResponse(t, "Bad JSON payload", 400);
 
 			}
 		} catch (Exception e) {
+			logger.error("Error while processing POST request", e);
 			e.printStackTrace();
 		}
 	}

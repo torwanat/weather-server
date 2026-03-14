@@ -7,10 +7,12 @@ import java.net.InetSocketAddress;
 import java.security.KeyStore;
 import java.util.concurrent.Executors;
 
+import ch.qos.logback.classic.Logger;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -20,6 +22,10 @@ import javax.net.ssl.TrustManagerFactory;
 public class Server {
 
 	public static void main(String[] args) {
+		LogbackConfig.configure();
+		Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+		logger.info("Starting server");
+
 		try {
 			HttpsServer server = HttpsServer.create(new InetSocketAddress(8001), 0);
 			SSLContext sslContext = myServerSSLContext(args);
@@ -43,23 +49,19 @@ public class Server {
 
 			server.setExecutor(Executors.newCachedThreadPool());
 			server.start();
+			logger.info("Server started");
 		} catch (IllegalStateException e) {
-			System.out.println("Server already started!");
-			e.printStackTrace();
+			logger.error("Server already started!", e);
 		} catch (IllegalArgumentException e) {
-			System.out.println("Invalid path / context already exists!");
-			e.printStackTrace();
+			logger.error("Invalid path / context already exists!", e);
 		} catch (NullPointerException e) {
-			System.out.println("Error with SSL config / server context!");
-			e.printStackTrace();
+			logger.error("Error with SSL config / server context!", e);
 		} catch (BindException e) {
-			System.out.println("Cannot bind to the port!");
-			e.printStackTrace();
+			logger.error("Cannot bind to the port!", e);
 		} catch (FileNotFoundException e){
-			System.out.println("Certificate not found!");
-			e.printStackTrace();
+			logger.error("Certificate not found!", e);
 		} catch (Exception e){
-			e.printStackTrace();
+			logger.error("Unexpected error occurred", e);
 		}
 	}
 

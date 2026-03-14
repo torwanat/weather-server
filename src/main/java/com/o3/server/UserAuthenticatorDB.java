@@ -1,12 +1,15 @@
 package com.o3.server;
 
+import ch.qos.logback.classic.Logger;
 import com.sun.net.httpserver.BasicAuthenticator;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 
 public class UserAuthenticatorDB extends BasicAuthenticator {
 	private final ServerDatabase db;
+	private static final Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
 	public UserAuthenticatorDB() {
 		super("datarecord");
@@ -20,7 +23,7 @@ public class UserAuthenticatorDB extends BasicAuthenticator {
 		try {
 			isValid = db.authenticateUser(username, password);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			logger.error("Error while authenticating user", e);
 			return false;
 		}
 
@@ -39,7 +42,7 @@ public class UserAuthenticatorDB extends BasicAuthenticator {
 					.put("nickname", user.getNickname())
 			);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			logger.error("Error while adding user", e);
 			return false;
 		}
 

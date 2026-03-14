@@ -1,10 +1,12 @@
 package com.o3.server;
 
+import ch.qos.logback.classic.Logger;
 import com.o3.server.observations.Metadata;
 import com.o3.server.observations.Observatory;
 import org.apache.commons.codec.digest.Crypt;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.Instant;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 public class ServerDatabase {
 	private Connection dbConnection = null;
 	private static  ServerDatabase dbInstance = null;
+	private static final Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
 	public static synchronized ServerDatabase getInstance() {
 		if (dbInstance == null){
@@ -31,8 +34,7 @@ public class ServerDatabase {
 		try {
 			initDb();
 		} catch (SQLException e) {
-			System.out.println("Database already found");
-//			e.printStackTrace();
+			logger.info("Database may already be initialized");
 		}
 	}
 
@@ -79,7 +81,6 @@ public class ServerDatabase {
 
 	public boolean setUser(JSONObject user) throws SQLException {
 		if (checkIfUserExists(user.getString("username"))){
-			System.out.println("User already exists");
 			return false;
 		}
 

@@ -1,11 +1,13 @@
 package com.o3.server;
 
+import ch.qos.logback.classic.Logger;
 import com.o3.server.observations.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -35,6 +37,7 @@ import java.util.stream.IntStream;
 
 public class ServerHandler implements HttpHandler {
 	private final ServerDatabase db;
+	private static final Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
 	public ServerHandler() {
 		super();
@@ -43,8 +46,6 @@ public class ServerHandler implements HttpHandler {
 
 	@Override
 	public void handle(HttpExchange t) {
-//		System.out.println("Request handled in thread " + Thread.currentThread().getName());
-
 		String method = t.getRequestMethod();
 
 		switch (method) {
@@ -66,7 +67,6 @@ public class ServerHandler implements HttpHandler {
 			JSONArray responseObservations = db.getRecords();
 
 			if (responseObservations.isEmpty()){
-				System.out.println("Empty");
 				handleEmptyResponse(t, 204);
 				return;
 			}
@@ -75,8 +75,8 @@ public class ServerHandler implements HttpHandler {
 			handleResponseWithData(t, responseString, 200);
 
 		} catch (SQLException e) {
-			e.printStackTrace();
-			handleResponseWithData(t, "Internal server error", 500);
+			logger.error("SQL Exception while getting observation data", e);
+			handleResponseWithData(t, "Internal server error", 400);
 		}
 	}
 
@@ -100,6 +100,7 @@ public class ServerHandler implements HttpHandler {
 			os.flush();
 			os.close();
 		} catch (Exception e){
+			logger.error("Error while sending empty response", e);
 			e.printStackTrace();
 		}
 	}
@@ -113,6 +114,7 @@ public class ServerHandler implements HttpHandler {
 			os.flush();
 			os.close();
 		} catch (Exception e) {
+			logger.error("Error while sending response with {}", responseString, e);
 			e.printStackTrace();
 		}
 	}
@@ -120,6 +122,7 @@ public class ServerHandler implements HttpHandler {
 	private boolean parsePUTRequest(String payload, String username, String query){
 		int id = getIdFromParam(query);
 		if (id == -1){
+			logger.error("Invalid query parameter : {}", query);
 			return false;
 		}
 
@@ -222,8 +225,7 @@ public class ServerHandler implements HttpHandler {
 
 			return db.updateRecord(observationRecordJSON, recordPayload, username, observatories, id, updateReason);
 		} catch (Exception e) {
-//			e.printStackTrace();
-			System.out.println("Error while parsing PUT request");
+			logger.error("Error while parsing PUT with {}", payload, e);
 			return false;
 		}
 	}
@@ -238,8 +240,7 @@ public class ServerHandler implements HttpHandler {
 			db.addRecord(observationRecordJSON, recordPayload, username, observatories);
 			return true;
 		} catch (Exception e) {
-//			e.printStackTrace();
-			System.out.println("Error while parsing POST request");
+			logger.error("Error while parsing POST with {}", payload, e);
 			return false;
 		}
 	}
@@ -262,7 +263,7 @@ public class ServerHandler implements HttpHandler {
 
 			return new Weather(temperatureInKelvins, cloudinessPercentage, backgroundLightVolume);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error while getting weather data", e);
 			return new Weather(0.0, 0.0, 0.0);
 		}
 	}

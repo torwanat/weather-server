@@ -1,9 +1,11 @@
 package com.o3.server;
 
+import ch.qos.logback.classic.Logger;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 
 public class CollectionHandler implements HttpHandler {
 	private final ServerDatabase db;
+	private static final Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
 	public CollectionHandler() {
 		super();
@@ -41,6 +44,7 @@ public class CollectionHandler implements HttpHandler {
 		if ("GET".equals(method)) {
 			getAllCollections(t);
 		} else {
+			logger.warn("Method {} not supported in /collections/", method);
 			sendResponseWithData(t, "Not supported", 400);
 		}
 	}
@@ -50,6 +54,7 @@ public class CollectionHandler implements HttpHandler {
 		if ("POST".equals(method)) {
 			createCollection(t);
 		}  else {
+			logger.warn("Method {} not supported in /collections/create", method);
 			sendResponseWithData(t, "Not supported", 400);
 		}
 	}
@@ -59,18 +64,25 @@ public class CollectionHandler implements HttpHandler {
 		if ("POST".equals(method)) {
 			addToCollection(t);
 		}  else {
+			logger.warn("Method {} not supported in /collections/add", method);
 			sendResponseWithData(t, "Not supported", 400);
 		}
 	}
 
 	private void handleGetCollection(HttpExchange t, String idPath){
-		try {
-			int id = Integer.parseInt(idPath.split("/")[1]);
-			getRecordsFromCollection(t, id);
-		} catch (Exception e) {
-			e.printStackTrace();
-			sendEmptyResponse(t, 400);
+		String method = t.getRequestMethod();
+		if ("GET".equals(method)) {
+			try {
+				int id = Integer.parseInt(idPath.split("/")[1]);
+				getRecordsFromCollection(t, id);
+			} catch (Exception e) {
+				logger.error("Error while trying to get records from collection {}.", idPath, e);
+				sendEmptyResponse(t, 400);
+			}
+		}  else {
+			logger.warn("Method {} not supported in /collections/(id)", method);
 		}
+
 	}
 
 	private void getAllCollections(HttpExchange t) {
@@ -80,7 +92,7 @@ public class CollectionHandler implements HttpHandler {
 			String responseString = responseCollectionsIDs.toString();
 			sendResponseWithData(t, responseString, 200);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error while trying to get records from collections.", e);
 			sendEmptyResponse(t, 400);
 		}
 	}
@@ -102,10 +114,11 @@ public class CollectionHandler implements HttpHandler {
 				responseJSON.put("created_collection_id", createdCollectionId);
 				sendResponseWithData(t, responseJSON.toString(), 200);
 			}  else {
+				logger.error("Error while creating collection {}.", payload);
 				sendEmptyResponse(t, 400);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error while creating collection.", e);
 			sendEmptyResponse(t, 400);
 		}
 	}
@@ -125,7 +138,7 @@ public class CollectionHandler implements HttpHandler {
 			db.addToCollection(collectionId, idsToAdd);
 			sendEmptyResponse(t, 200);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error while adding to collection.", e);
 			sendEmptyResponse(t, 400);
 		}
 	}
@@ -136,7 +149,7 @@ public class CollectionHandler implements HttpHandler {
 			String responseString = responseRecords.toString();
 			sendResponseWithData(t, responseString, 200);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error while getting records from collection {}.", id, e);
 			sendEmptyResponse(t, 400);
 		}
 	}
@@ -148,7 +161,7 @@ public class CollectionHandler implements HttpHandler {
 			os.flush();
 			os.close();
 		} catch (Exception e){
-			e.printStackTrace();
+			logger.error("Error while sending empty response", e);
 		}
 	}
 
@@ -161,7 +174,7 @@ public class CollectionHandler implements HttpHandler {
 			os.flush();
 			os.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error while sending response with {}", responseString, e);
 		}
 	}
 }
